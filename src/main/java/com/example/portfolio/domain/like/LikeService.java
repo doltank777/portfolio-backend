@@ -36,27 +36,29 @@ public class LikeService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException("게시글 없음", HttpStatus.NOT_FOUND));
 
-        boolean exists = likeRepository
-                .findByUserIdAndPostId(user.getId(), postId)
-                .isPresent();
-
-        if (exists) {
-            // 👍 좋아요 취소 (DB)
-            likeRepository.deleteByUserIdAndPostId(user.getId(), postId);
-        } else {
-            // 👍 좋아요 추가 (DB)
+        try {
+            // 🔥 그냥 저장 시도 (exists 체크 제거)
             Like like = Like.builder()
                     .user(user)
                     .post(post)
                     .build();
 
             likeRepository.save(like);
+
+            // 🔥 캐시 삭제
+            redisTemplate.delete(LIKE_COUNT_KEY + postId);
+
+            return "좋아요 추가";
+
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // 🔥 이미 존재 → 삭제 처리 (토글)
+
+            likeRepository.deleteByUserIdAndPostId(user.getId(), postId);
+
+            redisTemplate.delete(LIKE_COUNT_KEY + postId);
+
+            return "좋아요 취소";
         }
-
-        // 🔥 캐시 무효화
-        redisTemplate.delete(LIKE_COUNT_KEY + postId);
-
-        return exists ? "좋아요 취소" : "좋아요 추가";
     }
 
     // 👍 좋아요 수 조회
