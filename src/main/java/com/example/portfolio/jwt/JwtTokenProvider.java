@@ -1,50 +1,66 @@
 package com.example.portfolio.jwt;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
+import org.springframework.beans.factory.annotation.Value;
+
+import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
 
-    private final String SECRET_KEY = "my-secret-key-my-secret-key-my-secret-key";
+    @Value("${jwt.secret}")
+    private String secret;
 
-    private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    @Value("${jwt.expiration}")
+    private long tokenValidityInMilliseconds;
 
-    private final long TOKEN_VALID_TIME = 1000 * 60 * 60;
+    private SecretKey key;
 
+    // SecretKey 초기화
+    @PostConstruct
+    protected void init() {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+    }
+
+    // 토큰 생성
     public String createToken(String username) {
-
         Date now = new Date();
 
+        // 🔥 [수정] 기존 하드코딩 제거
+        Date validity = new Date(now.getTime() + tokenValidityInMilliseconds);
+
         return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + TOKEN_VALID_TIME))
-                .signWith(key, SignatureAlgorithm.HS256)
+                .subject(username)
+                .issuedAt(now)
+                .expiration(validity)
+                .signWith(key)
                 .compact();
     }
 
+    // 사용자 이름 추출
     public String getUsername(String token) {
-
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
+        Claims claims = Jwts.parser()
+                .verifyWith(key)
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return claims.getSubject();
     }
 
+    // 토큰 검증
     public boolean validateToken(String token) {
-
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
+            Jwts.parser()
+                    .verifyWith(key)
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
             return false;
