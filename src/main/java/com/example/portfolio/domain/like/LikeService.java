@@ -8,6 +8,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.concurrent.TimeUnit;
+
 @Service
 @RequiredArgsConstructor
 public class LikeService {
@@ -16,8 +20,15 @@ public class LikeService {
     private final PostRepository postRepository;
     private final StringRedisTemplate redisTemplate;
 
-    private static final String LIKE_COUNT_KEY = "post:like:count:";
-    private static final String LIKE_USER_KEY = "post:like:user:";
+    // 🔥 properties에서 가져오기
+    @Value("${redis.like.count.prefix}")
+    private String LIKE_COUNT_KEY;
+
+    @Value("${redis.like.user.prefix}")
+    private String LIKE_USER_KEY;
+
+    // 🔥 TTL 설정 (10분)
+    private static final long TTL = 10;
 
     public String like(Long postId, String username) {
 
@@ -38,14 +49,17 @@ public class LikeService {
             redisTemplate.opsForSet().remove(userKey, username);
             redisTemplate.opsForValue().decrement(countKey);
 
-            return "좋아요 취소";
         } else {
             // 👍 좋아요 추가
             redisTemplate.opsForSet().add(userKey, username);
             redisTemplate.opsForValue().increment(countKey);
-
-            return "좋아요 추가";
         }
+
+        // 🔥 TTL 적용 (매번 갱신)
+        redisTemplate.expire(userKey, TTL, TimeUnit.MINUTES);
+        redisTemplate.expire(countKey, TTL, TimeUnit.MINUTES);
+
+        return Boolean.TRUE.equals(isMember) ? "좋아요 취소" : "좋아요 추가";
     }
 
     public long count(Long postId) {
@@ -54,14 +68,16 @@ public class LikeService {
 
         String value = redisTemplate.opsForValue().get(countKey);
 
+        // 🔥 캐시 hit
         if (value != null) {
             return Long.parseLong(value);
         }
 
-        // 🔥 Redis 없으면 DB 조회 후 세팅
-        long count = 0L; // 초기값 (DB 연동 시 변경 가능)
+        // 🔥 [중요] DB fallback (현재는 0, 나중에 DB 연동 가능)
+        long count = 0L;
 
-        redisTemplate.opsForValue().set(countKey, String.valueOf(count));
+        // 🔥 TTL 적용해서 저장
+        redisTemplate.opsForValue().set(countKey, String.valueOf(count), TTL, TimeUnit.MINUTES);
 
         return count;
     }
