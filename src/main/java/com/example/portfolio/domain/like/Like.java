@@ -11,22 +11,18 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "post_id"})
-        }
-)
+@Table(name = "likes")
 public class Like {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    // 🔥 유저
+    @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "post_id")
+    // 🔥 게시글
+    @ManyToOne(fetch = FetchType.LAZY)
     private Post post;
 }
