@@ -37,7 +37,6 @@ out/
 .vscode/
 
 /build
-.gradle
 /node_modules
 application.yml
 
