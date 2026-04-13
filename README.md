@@ -18,11 +18,13 @@ Spring Security + JWT + 도메인 중심 설계를 기반으로 개발했습니�
 * JWT
 * Spring Data JPA
 * H2 Database
+* Redis
 
 ### DevOps
 
 * Gradle
 * GitHub
+* Docker (Redis 컨테이너 실행)
 
 ---
 
@@ -134,6 +136,17 @@ Authorization: Bearer {JWT_TOKEN}
 
 ---
 
+## ⚙ 주요 구현 포인트
+
+* JWT 기반 Stateless 인증 구조
+* Spring Security Filter 직접 구현
+* 도메인 중심 패키지 구조 설계
+* Redis 기반 좋아요 캐싱 (Cache Aside 패턴)
+* 좋아요 동시성 문제 해결 (DB Unique + 예외 처리)
+* 페이징 처리 (Pageable)
+
+---
+
 ## 🧪 실행 방법
 
 ### 1. 프로젝트 클론
@@ -141,8 +154,12 @@ Authorization: Bearer {JWT_TOKEN}
 ```
 git clone https://github.com/doltank777/portfolio-backend.git
 ```
+### 2. Redis 실행 (Docker)
+```
+docker run -d -p 6379:6379 redis
+```
 
-### 2. 실행
+### 3. 애플리케이션 실행
 
 ```
 ./gradlew bootRun
@@ -152,7 +169,7 @@ git clone https://github.com/doltank777/portfolio-backend.git
 
 ---
 
-### 3. 접속
+### 4. 접속
 
 ```
 http://localhost:8080
@@ -160,21 +177,11 @@ http://localhost:8080
 
 ---
 
-## ⚙ 주요 구현 포인트
-
-* JWT 기반 Stateless 인증 구조
-* Spring Security Filter 직접 구현
-* 도메인 중심 패키지 구조 설계
-* 좋아요 토글 로직 구현
-* 페이징 처리 (Pageable)
-
----
-
 ## 🔧 향후 개선 사항
 
 * MySQL 적용
-* Redis 캐싱 (좋아요)
-* Docker 적용
+* Redis 캐시 TTL 및 고도화 전략
+* Docker Compose 구성
 * AWS EC2 배포
 * CI/CD 구축 (GitHub Actions)
 
