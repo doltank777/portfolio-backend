@@ -28,7 +28,11 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 
-    runtimeOnly 'com.h2database:h2'
+    // ❌ H2 제거 (MySQL 전환)
+    // runtimeOnly 'com.h2database:h2'
+
+    // 🔥 MySQL 드라이버 추가
+    runtimeOnly 'com.mysql:mysql-connector-j'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
