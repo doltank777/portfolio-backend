@@ -2,9 +2,9 @@
 
 ## 📌 프로젝트 소개
 
-JWT 기반 인증 시스템을 적용한 게시판 프로젝트입니다.
-회원가입 / 로그인 / 게시글 / 댓글 / 좋아요 기능을 구현하였으며,
-Spring Security + JWT + 도메인 중심 설계를 기반으로 개발했습니다.
+JWT 기반 인증 시스템을 적용한 게시판 프로젝트입니다.  
+회원가입 / 로그인 / 게시글 / 댓글 / 좋아요 기능을 구현하였으며,  
+Spring Security + JWT + Redis + MySQL 기반으로 설계된 백엔드 구조입니다.
 
 ---
 
@@ -17,14 +17,15 @@ Spring Security + JWT + 도메인 중심 설계를 기반으로 개발했습니�
 * Spring Security
 * JWT
 * Spring Data JPA
-* H2 Database
+* MySQL
 * Redis
 
 ### DevOps
 
 * Gradle
 * GitHub
-* Docker (Redis 컨테이너 실행)
+* Docker
+* Docker Compose
 
 ---
 
@@ -93,6 +94,7 @@ Like
 Authorization: Bearer {JWT_TOKEN}
 ```
 
+
 * Spring Security Filter 기반 인증 처리
 
 ---
@@ -102,8 +104,8 @@ Authorization: Bearer {JWT_TOKEN}
 ### 🔑 인증 API
 
 | 기능   | Method | URL              | Request            | Response  |
-| ---- | ------ | ---------------- | ------------------ | --------- |
-| 회원가입 | POST   | /api/auth/signup | username, password | 성공 메시지    |
+|--------|--------|------------------|--------------------|----------|
+| 회원가입 | POST   | /api/auth/signup | username, password | 성공 메시지 |
 | 로그인  | POST   | /api/auth/login  | username, password | JWT Token |
 
 ---
@@ -111,7 +113,7 @@ Authorization: Bearer {JWT_TOKEN}
 ### 📝 게시글 API
 
 | 기능     | Method | URL                       | 설명     |
-| ------ | ------ | ------------------------- | ------ |
+|----------|--------|---------------------------|----------|
 | 게시글 생성 | POST   | /api/posts                | 게시글 작성 |
 | 게시글 목록 | GET    | /api/posts?page=0&size=10 | 페이징 조회 |
 | 게시글 조회 | GET    | /api/posts/{id}           | 단건 조회  |
@@ -121,7 +123,7 @@ Authorization: Bearer {JWT_TOKEN}
 ### 💬 댓글 API
 
 | 기능    | Method | URL                    | 설명    |
-| ----- | ------ | ---------------------- | ----- |
+|---------|--------|------------------------|--------|
 | 댓글 작성 | POST   | /api/comments/{postId} | 댓글 등록 |
 | 댓글 조회 | GET    | /api/comments/{postId} | 댓글 목록 |
 
@@ -129,21 +131,36 @@ Authorization: Bearer {JWT_TOKEN}
 
 ### ❤️ 좋아요 API
 
-| 기능     | Method | URL                 | 설명    |
-| ------ | ------ | ------------------- | ----- |
-| 좋아요 토글 | POST   | /api/likes/{postId} | 추가/취소 |
-| 좋아요 개수 | GET    | /api/likes/{postId} | 개수 조회 |
+| 기능     | Method | URL                 | 설명        |
+|----------|--------|---------------------|------------|
+| 좋아요 토글 | POST   | /api/likes/{postId} | 추가/취소     |
+| 좋아요 개수 | GET    | /api/likes/{postId} | Redis 캐시 조회 |
 
 ---
 
 ## ⚙ 주요 구현 포인트
 
+### 🔐 인증
 * JWT 기반 Stateless 인증 구조
 * Spring Security Filter 직접 구현
+
+### 🏗 아키텍처
 * 도메인 중심 패키지 구조 설계
-* Redis 기반 좋아요 캐싱 (Cache Aside 패턴)
-* 좋아요 동시성 문제 해결 (DB Unique + 예외 처리)
-* 페이징 처리 (Pageable)
+* DTO 기반 API 설계
+
+### ⚡ 성능 최적화
+* JPA N+1 문제 해결 (Fetch Join)
+* DTO 직접 조회로 성능 개선
+* Pageable 기반 페이징 처리
+
+### 🚀 Redis 캐싱
+* Cache Aside 패턴 적용
+* 좋아요 수 Redis 캐싱
+* Redis Set을 활용한 사용자 중복 방지
+
+### 🔒 동시성 처리
+* DB Unique Constraint 적용
+* Redis 기반 빠른 처리 + DB 보완 구조
 
 ---
 
@@ -154,9 +171,9 @@ Authorization: Bearer {JWT_TOKEN}
 ```
 git clone https://github.com/doltank777/portfolio-backend.git
 ```
-### 2. Redis 실행 (Docker)
+### 2. Docker 실행
 ```
-docker run -d -p 6379:6379 redis
+docker-compose up -d
 ```
 
 ### 3. 애플리케이션 실행
@@ -177,13 +194,36 @@ http://localhost:8080
 
 ---
 
+## 🐳 Docker 구성
+
+* MySQL 컨테이너
+* Redis 컨테이너
+* Spring Boot 애플리케이션
+
+[Client]
+↓
+Spring Boot
+↓
+MySQL (DB)
+Redis (Cache)
+
+---
+
+## 🔐 보안 고려사항
+
+* JWT Secret Key 256bit 이상 설정
+* 토큰 검증 로직 서버 측 처리
+* JWT 라이브러리 취약점(CVE-2024-31033) 인지 및 안전한 사용
+
+---
+
 ## 🔧 향후 개선 사항
 
-* MySQL 적용
-* Redis 캐시 TTL 및 고도화 전략
-* Docker Compose 구성
+* Redis TTL 및 캐시 전략 고도화
+* QueryDSL 도입
 * AWS EC2 배포
 * CI/CD 구축 (GitHub Actions)
+* MSA 구조 확장
 
 ---
 
