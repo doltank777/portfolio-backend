@@ -49,7 +49,7 @@ public class SecurityConfig {
                 )
 
                 // 🔥 DB 사용자 인증 적용
-                .authenticationProvider(authenticationProvider())
+                // .authenticationProvider(authenticationProvider())
 
                 // 🔥 권한 설정
                 .authorizeHttpRequests(auth -> auth
@@ -100,6 +100,7 @@ public class SecurityConfig {
     }
 
     // 🔥 DB 사용자 인증 Provider
+    /*
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
 
@@ -111,7 +112,7 @@ public class SecurityConfig {
 
         return provider;
     }
-
+    */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
