@@ -4,12 +4,11 @@ import com.example.portfolio.domain.user.UserRepository;
 import com.example.portfolio.jwt.JwtAuthenticationFilter;
 import com.example.portfolio.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
@@ -29,35 +28,45 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+    private final CustomUserDetailsService customUserDetailsService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                // ✅ CORS 활성화 추가
-                .cors(Customizer.withDefaults())
-
-                // csrf 비활성화
+                // 🔥 CSRF 비활성화
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 기본 로그인 폼 비활성화
+                // 🔥 기본 로그인 폼 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
 
-                // Basic Auth 비활성화
+                // 🔥 Basic Auth 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable)
 
-                // JWT = 세션 안씀
+                // 🔥 JWT 방식이므로 세션 사용 안 함
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // 권한 설정
+                // 🔥 DB 사용자 인증 적용
+                .authenticationProvider(authenticationProvider())
+
+                // 🔥 권한 설정
                 .authorizeHttpRequests(auth -> auth
 
-                        // 로그인/회원가입 공개
+                        // 인증 없이 허용
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // H2 콘솔
+                        // 프론트 정적 파일 허용 (React/Vue 빌드 시 대비)
+                        .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/static/**",
+                                "/assets/**",
+                                "/favicon.ico"
+                        ).permitAll()
+
+                        // H2 콘솔 허용
                         .requestMatchers("/h2-console/**").permitAll()
 
                         // 게시글 조회 공개
@@ -66,25 +75,41 @@ public class SecurityConfig {
                         // 댓글 조회 공개
                         .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
 
-                        // 좋아요 조회 공개
+                        // 좋아요 개수 조회 공개
                         .requestMatchers(HttpMethod.GET, "/api/likes/**").permitAll()
 
-                        // 나머지 인증 필요
+                        // OPTIONS 요청 허용 (CORS preflight)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 )
 
-                // H2 콘솔 iframe 허용
+                // 🔥 H2 콘솔 iframe 허용
                 .headers(headers ->
                         headers.frameOptions(frame -> frame.disable())
                 )
 
-                // JWT 필터
+                // 🔥 JWT 필터 등록
                 .addFilterBefore(
                         new JwtAuthenticationFilter(jwtTokenProvider, userRepository),
                         UsernamePasswordAuthenticationFilter.class
                 );
 
         return http.build();
+    }
+
+    // 🔥 DB 사용자 인증 Provider
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+
+        DaoAuthenticationProvider provider =
+                new DaoAuthenticationProvider();
+
+        provider.setUserDetailsService(customUserDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+
+        return provider;
     }
 
     @Bean
