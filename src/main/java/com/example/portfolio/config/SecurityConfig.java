@@ -48,9 +48,6 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // 🔥 DB 사용자 인증 적용
-                // .authenticationProvider(authenticationProvider())
-
                 // 🔥 권한 설정
                 .authorizeHttpRequests(auth -> auth
 
@@ -99,20 +96,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 🔥 DB 사용자 인증 Provider
-    /*
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider();
-
-        provider.setUserDetailsService(customUserDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-
-        return provider;
-    }
-    */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
