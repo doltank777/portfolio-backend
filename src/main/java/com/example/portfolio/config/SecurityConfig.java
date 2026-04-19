@@ -37,6 +37,9 @@ public class SecurityConfig {
                 // 🔥 CSRF 비활성화
                 .csrf(AbstractHttpConfigurer::disable)
 
+                // 🔥 CORS 추가
+                .cors(cors -> {})
+
                 // 🔥 기본 로그인 폼 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
 
