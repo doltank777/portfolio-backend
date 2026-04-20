@@ -27,5 +27,21 @@ public class Post {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Long viewCount = 0L;
+
     private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        if (this.viewCount == null) {
+            this.viewCount = 0L;
+        }
+    }
+
+    public void increaseViewCount() {
+        this.viewCount++;
+    }
 }
