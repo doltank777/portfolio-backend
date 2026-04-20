@@ -31,4 +31,14 @@ public class CommentController {
     public List<Comment> list(@PathVariable Long postId) {
         return commentService.findByPost(postId);
     }
+
+    // 특정 게시글 댓글 삭제
+    @DeleteMapping("/{commentId}")
+    public void delete(@PathVariable Long commentId,
+                       Authentication authentication) {
+
+        String username = authentication.getName();
+
+        commentService.delete(commentId, username);
+    }
 }
