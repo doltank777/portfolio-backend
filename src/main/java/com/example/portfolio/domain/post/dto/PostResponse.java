@@ -15,6 +15,7 @@ public class PostResponse {
     private String content;
     private String username;
     private long likeCount;
+    private long viewCount;
     private LocalDateTime createdAt;
 
     public static PostResponse from(Post post, long likeCount) {
@@ -24,6 +25,7 @@ public class PostResponse {
                 .content(post.getContent())
                 .username(post.getUser().getUsername())
                 .likeCount(likeCount)
+                .viewCount(post.getViewCount() == null ? 0L : post.getViewCount())
                 .createdAt(post.getCreatedAt())
                 .build();
     }
