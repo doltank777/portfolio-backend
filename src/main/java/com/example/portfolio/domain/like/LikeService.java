@@ -36,29 +36,31 @@ public class LikeService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException("게시글 없음", HttpStatus.NOT_FOUND));
 
-        try {
-            // 🔥 그냥 저장 시도 (exists 체크 제거)
-            Like like = Like.builder()
-                    .user(user)
-                    .post(post)
-                    .build();
+        // 이미 좋아요 눌렀는지 확인
+        boolean exists = likeRepository.existsByUserIdAndPostId(
+                user.getId(), postId
+        );
 
-            likeRepository.save(like);
-
-            // 🔥 캐시 삭제
-            redisTemplate.delete(LIKE_COUNT_KEY + postId);
-
-            return "좋아요 추가";
-
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // 🔥 이미 존재 → 삭제 처리 (토글)
-
-            likeRepository.deleteByUserIdAndPostId(user.getId(), postId);
+        // 좋아요 취소
+        if (exists) {
+            likeRepository.deleteLike(user.getId(), postId);
 
             redisTemplate.delete(LIKE_COUNT_KEY + postId);
 
             return "좋아요 취소";
         }
+
+        // 좋아요 추가
+        Like like = Like.builder()
+                .user(user)
+                .post(post)
+                .build();
+
+        likeRepository.save(like);
+
+        redisTemplate.delete(LIKE_COUNT_KEY + postId);
+
+        return "좋아요 추가";
     }
 
     // 👍 좋아요 수 조회
@@ -68,15 +70,12 @@ public class LikeService {
 
         String value = redisTemplate.opsForValue().get(key);
 
-        // 🔥 캐시 HIT
         if (value != null) {
             return Long.parseLong(value);
         }
 
-        // 🔥 캐시 MISS → DB 조회
         long count = likeRepository.countByPostId(postId);
 
-        // 🔥 Redis 저장 (TTL)
         redisTemplate.opsForValue()
                 .set(key, String.valueOf(count), TTL, TimeUnit.MINUTES);
 
