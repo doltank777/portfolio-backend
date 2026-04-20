@@ -75,6 +75,12 @@ public class SecurityConfig {
                         // 댓글 조회 공개
                         .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
 
+                        // 댓글 작성 로그인 사용자 허용
+                        .requestMatchers(HttpMethod.POST, "/api/comments").authenticated()
+
+                        // 댓글 삭제 로그인 사용자 허용
+                        .requestMatchers(HttpMethod.DELETE, "/api/comments/**").authenticated()
+
                         // 좋아요 개수 조회 공개
                         .requestMatchers(HttpMethod.GET, "/api/likes/**").permitAll()
 
