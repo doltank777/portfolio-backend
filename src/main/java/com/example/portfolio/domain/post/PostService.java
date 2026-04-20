@@ -5,12 +5,13 @@ import com.example.portfolio.domain.post.dto.PostCreateRequest;
 import com.example.portfolio.domain.post.dto.PostResponse;
 import com.example.portfolio.domain.user.User;
 import com.example.portfolio.domain.user.UserRepository;
+import com.example.portfolio.global.error.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import com.example.portfolio.global.error.exception.CustomException;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,8 +22,8 @@ public class PostService {
     private final LikeRepository likeRepository;
 
     // 게시글 생성
+    @Transactional
     public PostResponse create(PostCreateRequest request, String username) {
-
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomException("사용자 없음", HttpStatus.NOT_FOUND));
 
@@ -30,16 +31,16 @@ public class PostService {
                 .title(request.getTitle())
                 .content(request.getContent())
                 .user(user)
+                .viewCount(0L)
                 .build();
 
         Post saved = postRepository.save(post);
-
         return PostResponse.from(saved, 0);
     }
 
-    // 전체 조회 (페이징 + DTO + 좋아요)
+    // 전체 조회 (페이징 + DTO + 좋아요 + 조회수 포함)
+    @Transactional(readOnly = true)
     public Page<PostResponse> findAll(Pageable pageable) {
-
         return postRepository.findAll(pageable)
                 .map(post -> {
                     long likeCount = likeRepository.countByPostId(post.getId());
@@ -47,20 +48,21 @@ public class PostService {
                 });
     }
 
-    // 단건 조회
+    // 단건 조회 (조회수 증가)
+    @Transactional
     public PostResponse findById(Long id) {
-
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException("게시글 없음", HttpStatus.NOT_FOUND));
 
-        long likeCount = likeRepository.countByPostId(post.getId());
+        post.increaseViewCount();
 
+        long likeCount = likeRepository.countByPostId(post.getId());
         return PostResponse.from(post, likeCount);
     }
 
     // 수정
+    @Transactional
     public PostResponse update(Long id, PostCreateRequest request, String username) {
-
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException("게시글 없음", HttpStatus.NOT_FOUND));
 
@@ -71,16 +73,13 @@ public class PostService {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
 
-        Post updated = postRepository.save(post);
-
-        long likeCount = likeRepository.countByPostId(updated.getId());
-
-        return PostResponse.from(updated, likeCount);
+        long likeCount = likeRepository.countByPostId(post.getId());
+        return PostResponse.from(post, likeCount);
     }
 
     // 삭제
+    @Transactional
     public void delete(Long id, String username) {
-
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException("게시글 없음", HttpStatus.NOT_FOUND));
 
