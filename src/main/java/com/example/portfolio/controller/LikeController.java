@@ -14,11 +14,8 @@ public class LikeController {
 
     // 좋아요 토글
     @PostMapping("/{postId}")
-    public String like(@PathVariable Long postId,
-                       Authentication authentication) {
-
+    public String like(@PathVariable Long postId, Authentication authentication) {
         String username = authentication.getName();
-
         return likeService.like(postId, username);
     }
 
@@ -26,5 +23,12 @@ public class LikeController {
     @GetMapping("/{postId}")
     public Long count(@PathVariable Long postId) {
         return likeService.count(postId);
+    }
+
+    // 현재 로그인 사용자의 좋아요 여부 조회
+    @GetMapping("/{postId}/me")
+    public Boolean isLikedByMe(@PathVariable Long postId, Authentication authentication) {
+        String username = authentication.getName();
+        return likeService.isLikedByMe(postId, username);
     }
 }
