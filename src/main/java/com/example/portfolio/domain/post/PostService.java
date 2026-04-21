@@ -1,5 +1,6 @@
 package com.example.portfolio.domain.post;
 
+import com.example.portfolio.domain.comment.CommentRepository;
 import com.example.portfolio.domain.like.LikeRepository;
 import com.example.portfolio.domain.post.dto.PostCreateRequest;
 import com.example.portfolio.domain.post.dto.PostResponse;
@@ -20,6 +21,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
+    private final CommentRepository commentRepository;
 
     // 게시글 생성
     @Transactional
@@ -67,7 +69,7 @@ public class PostService {
                 .orElseThrow(() -> new CustomException("게시글 없음", HttpStatus.NOT_FOUND));
 
         if (!post.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("수정 권한 없음");
+            throw new CustomException("수정 권한 없음", HttpStatus.FORBIDDEN);
         }
 
         post.setTitle(request.getTitle());
@@ -84,9 +86,14 @@ public class PostService {
                 .orElseThrow(() -> new CustomException("게시글 없음", HttpStatus.NOT_FOUND));
 
         if (!post.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("삭제 권한 없음");
+            throw new CustomException("삭제 권한 없음", HttpStatus.FORBIDDEN);
         }
 
+        // 자식 데이터 먼저 삭제
+        likeRepository.deleteByPostId(id);
+        commentRepository.deleteByPostId(id);
+
+        // 마지막에 부모 데이터 삭제
         postRepository.delete(post);
     }
 }
